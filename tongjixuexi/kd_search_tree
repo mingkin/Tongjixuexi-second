@@ -1,0 +1,138 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+class Node:
+    def __init__(self,values=None,left=None,right=None,layers=None,index=None):
+        self.values = values
+        self.left = left
+        self.right = right
+        self.layers = layers
+        self.index = index
+    def get_layer(self):
+        return self.layers
+    def get_index(self):
+        return self.index
+
+class Build_Kdtree:
+    def __init__(self,X):
+        self.X = X
+        self.feature_dim = len(X[0])
+        self.root = Node(layers=0)
+        self.closest_x_true = []
+        self.closest_dis_true = []
+
+    def bulid_tree(self):
+        def return_mid_data(x,layer):
+            if len(x) == 0:
+                return None,None,None,None
+            else:
+                sample_num = len(x)
+                cut_feature_index = layer % self.feature_dim
+                x.sort(key=lambda x:x[cut_feature_index])
+                mid = sample_num // 2
+                mid_value = x[mid]
+                left_x = x[:mid]
+                right_x = x[mid+1:]
+                return  mid_value,cut_feature_index,left_x,right_x
+
+        def create_tree(root,x,layer):
+            if len(x) == 1:
+                root.values = x[0]
+                root.layers = layer
+                root.index = None
+                root.left = None
+                root.right = None
+            else:
+                mid_value,cut_feature_index,left_x,right_x = return_mid_data(x,layer)
+                root.values = mid_value
+                root.layers = layer
+                root.index = cut_feature_index
+                if left_x:
+                    root.left = Node()
+                    create_tree(root.left,left_x,layer+1)
+                if right_x:
+                    root.right = Node()
+                    create_tree(root.right,right_x,layer+1)
+        create_tree(self.root,self.X,0)
+
+    def print_tree(self):
+        root = self.root
+        def pre_order(root):
+            if root:
+                print(root.layers,root.index,root.values)
+                pre_order(root.left)
+                pre_order(root.right)
+        pre_order(root)
+
+    def cauclate_dis(self,x1,x2,p=2):
+        x1 = np.array(x1)
+        x2 = np.array(x2)
+        return np.sum(abs(x1-x2)**p)**(1/p)
+
+    def search_leave(self,x,k):
+        def search(x,root):
+            if root:
+                closest_x = root.values
+                closest_dis = self.cauclate_dis(closest_x,x)
+                if len(self.closest_x_true)<k:
+                    self.closest_x_true.append(closest_x)
+                    self.closest_dis_true.append(closest_dis)
+                elif closest_dis<max(self.closest_dis_true):
+                    self.closest_dis_true[self.closest_dis_true.index(max(self.closest_dis_true))] = closest_dis
+                    self.closest_x_true[self.closest_dis_true.index(max(self.closest_dis_true))] = closest_x
+                if root.right:
+                    search(x,root.right)
+                if root.left:
+                    search(x,root.left)
+        root = self.root
+        if len(x) != self.feature_dim:
+            raise IndexError
+        search(x,root)
+
+        # def search_nearest_leave(x,root):
+        #     while root:
+        #         if root.left is None and root.right is None:
+        #             break
+        #         if root.left is None and root.right is not None:
+        #             root = root.right
+        #             break
+        #         if root.left is not None and root.right is None:
+        #             root = root.left
+        #             break
+        #         if x[root.index] <= root.values[root.index]:
+        #             root = root.left
+        #         else:
+        #             root= root.right
+        #     closest_x = root.values
+        #     closest_dis = self.cauclate_dis(closest_x,x)
+        #     return closest_x,closest_dis,root
+        #
+        # closest_x, closest_dis,root = search_nearest_leave(x,root)
+        # closest_x_true = closest_x
+        # closest_dis_true = closest_dis
+
+
+def main():
+    x=[[2,3],[5,4],[9,6],[4,7],[8,1],[7,2]]
+    kdtree  = Build_Kdtree(x)
+    kdtree.bulid_tree()
+    kdtree.print_tree()
+    predict_x = [6.9,6]
+    kdtree.search_leave(predict_x,2)
+    print(kdtree.closest_x_true,kdtree.closest_dis_true)
+    plt.scatter([k[0] for k in x], [k[1] for k in x], c='g')
+    plt.scatter(predict_x[0],predict_x[1],c='b')
+    plt.scatter([k[0] for k in kdtree.closest_x_true], [k[1] for k in kdtree.closest_x_true],c='r')
+    plt.show()
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
+
+
+

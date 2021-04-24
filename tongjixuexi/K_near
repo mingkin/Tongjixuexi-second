@@ -1,0 +1,53 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+class K_near:
+    def __init__(self,X,Y,K=5,p=2):
+        self.K = K
+        self.X = np.array(X)
+        self.Y = np.array(Y)
+        self.p = p
+
+    def cauclate_dis(self,x1,x2):
+        return np.sum(abs(x1-x2)**self.p)**(1/self.p)
+
+    def predict(self,x):
+        result=[]
+        for x_ in x:
+            dis_set = [self.cauclate_dis(i,x_) for i in self.X]
+            dis_max = dis_set[:self.K]
+            dis_label = self.Y[:self.K]
+            for i,j in zip(dis_set[self.K:],self.Y[self.K:]):
+                max_dis = max(dis_max)
+                if i < max_dis:
+                    min_index = dis_max.index(max_dis)
+                    dis_max[min_index] = i
+                    dis_label[min_index] = j
+            dict = {}
+            for i in dis_label:
+                if i not in dict.keys():
+                    dict[i]=1
+                else:
+                    dict[i] +=1
+            sort_ = sorted(dict.items(), key=lambda dict:dict[1],reverse = True)
+            predict_ = sort_[0][0]
+            result.append(predict_)
+        return result
+
+def main():
+    x = [[1,2],[2,3],[2,2],[2,1],[9,7],[10,2],[2,5]]
+    y = [1,1,1,-1,-1,-1,1]
+    x_predict = [[4,2],[8,4]]
+    plt.show()
+    K_near_ = K_near(x,y,3,2)
+    print(K_near_.predict(x_predict))
+    positive_ =  np.array(x)[np.array(y) == 1]
+    negetive_ = np.array(x)[np.array(y) == -1]
+    plt.scatter([k[0] for k in positive_],[k[1] for k in positive_],c='r',label='1')
+    plt.scatter([k[0] for k in negetive_], [k[1] for k in negetive_],c='b',label='0')
+    plt.scatter([k[0] for k in x_predict], [k[1] for k in x_predict], c='g', label='0')
+    plt.show()
+
+if __name__ == '__main__':
+    main()
+
